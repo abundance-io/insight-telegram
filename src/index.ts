@@ -1,25 +1,54 @@
-// const { Telegraf } = require("telegraf");
-import { Telegraf } from "telegraf";
-import { message } from "telegraf/filters";
-import { MenuMiddleware, MenuTemplate } from "grammy-inline-menu";
+import { Bot, type Context as BaseContext } from "grammy";
+import dotenv from "dotenv";
+import {
+  createBackMainMenuButtons,
+  MenuMiddleware,
+  MenuTemplate,
+} from "grammy-inline-menu";
 
-const menuTemplate = new MenuTemplate<any>(
-  (ctx) => `Hey ${ctx.from.first_name}!`
-);
+// Check out https://grammy.dev/guide/context.html and Context flavours
+dotenv.config();
+type MyContext = BaseContext;
 
-menuTemplate.interact("I am excited!", "a", {
-  do: async (ctx) => {
-    await ctx.reply("As am I!");
-    return false;
-  },
-});
+if (process.env.BOT_TOKEN) {
+  const bot = new Bot<MyContext>(process.env.BOT_TOKEN);
 
-const bot = new Telegraf("6754611306:AAESEeEdj7QRpDGk5PaoDPjAAix_6LiNH7U");
-const menuMiddleware = new MenuMiddleware("/", menuTemplate);
-bot.start((ctx) => menuMiddleware.replyToContext(ctx));
-bot.use(menuMiddleware);
-bot.launch();
+  bot.on("callback_query:data", async (ctx, next) => {
+    console.log(
+      "another callbackQuery happened",
+      ctx.callbackQuery.data.length,
+      ctx.callbackQuery.data
+    );
+    return next();
+  });
 
-// Enable graceful stop
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+  // bot.command("start", async (ctx) => ));
+  // bot.command("keyboard" async (ctx) =>ctx.replywith);
+  // bot.command("poll", async (ctx) =>
+  //   ctx.replyWithPoll(
+  //     "what is your name",
+  //     ["abundance", "jachi", "treasure", "gozirim"],
+
+  //     { type: "quiz", correct_option_id: 0, is_anonymous: false }
+  //   )
+  // );
+
+  // bot.use(menuMiddleware.middleware());
+
+  bot.catch((error) => {
+    console.log("bot error", error);
+  });
+
+  async function startup() {
+    await bot.start({
+      onStart(botInfo) {
+        console.log(new Date(), "Bot starts as", botInfo.username);
+      },
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  startup();
+} else {
+  console.log("BOT_TOKEN not supplied");
+}
